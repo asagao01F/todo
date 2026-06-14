@@ -1,0 +1,7 @@
+app:
+  env: "local"
+database:
+  postgres:
+    host: "localhost"
+    user: "postgres"
+    password: "local_password"

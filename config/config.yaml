@@ -1,0 +1,12 @@
+app:
+  name: "todo-service"
+api:
+  port: 8080
+  timeout_seconds: 30
+database:
+  postgres:
+    port: 5432
+    dbname: "todo_db"
+    ssl_mode: "disable"
+    max_open_conns: 25
+    max_idle_conns: 25

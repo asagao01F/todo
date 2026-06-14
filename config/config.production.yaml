@@ -1,0 +1,8 @@
+app:
+  env: "production"
+database:
+  postgres:
+    host: "prod-db-rds.amazonaws.com" # 例：AWS上のDBなど
+    user: "prod_admin"
+    password: "super_secret_password_here"
+    ssl_mode: "require" # 本番はSSLを有効に
