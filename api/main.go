@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
@@ -8,9 +9,8 @@ import (
 	"todo/api/handler"
 	"todo/base/repository"
 	"todo/config"
-	"database/sql"
-	_ "github.com/jackc/pgx/v5/stdlib"
 
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 func ConnectDB(cfg *config.PostgresConfig) (*sql.DB, error) {
@@ -54,7 +54,7 @@ func main() {
 
 	// 3. リポジトリ・ハンドラーの初期化 (依存関係の注入: DI)
 	todoRepo := repository.NewPostgresTodoRepository(db)
-	
+
 	todoHandler := handler.NewTodoHandler(todoRepo) // 本来はここにusecaseが入ります
 	healthHandler := handler.NewHealthHandler(db)
 
