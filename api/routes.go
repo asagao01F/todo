@@ -10,19 +10,46 @@ func NewRouter(todoHandler *handler.TodoHandler, healthHandler *handler.HealthHa
 	mux := http.NewServeMux()
 
 	// -----------------------------------------------------------------------------
-	// ヘルスチェック
+	// OpenAPIが生成したルーティングを一括登録する
 	// -----------------------------------------------------------------------------
-	mux.HandleFunc("GET /health", healthHandler.Check)
+	
+	// 各ハンドラーを結合した、OpenAPI用の総合サーバーを作成
+	// (後述の複合構造体をここで使います)
+	apiServer := &CombinedServer{
+		TodoHandler:   todoHandler,
+		HealthHandler: healthHandler,
+	}
 
-	// -----------------------------------------------------------------------------
-	// TODO API (CRUD)
-	// -----------------------------------------------------------------------------
-	// Go 1.22からは "METHOD /path" の形式でHTTPメソッドを制限できるようになりました
-	mux.HandleFunc("POST /todos", todoHandler.Create)      // C: 作成
-	mux.HandleFunc("GET /todos/{id}", todoHandler.GetByID) // R: 1件取得 ({id}でパスパラメータを受け取る)
-	// mux.HandleFunc("GET /todos", todoHandler.GetAll)     // R: 一覧取得（必要に応じて実装）
-	// mux.HandleFunc("PUT /todos/{id}", todoHandler.Update)  // U: 更新（必要に応じて実装）
-	// mux.HandleFunc("DELETE /todos/{id}", todoHandler.Delete) // D: 削除（必要に応じて実装）
+	// 自動生成された HandlerFromMux 関数に mux と apiServer を渡すだけで、
+	// YAMLに書かれたすべてのルート (GET /health, POST /todos, GET /todos/{id}) が
+	// 自動的に Go 1.22 形式で mux に登録されます。
+	handler.HandlerFromMux(apiServer, mux)
 
 	return mux
+}
+
+// -----------------------------------------------------------------------------
+// 補助構造体: 2つのハンドラーを1つにまとめる
+// -----------------------------------------------------------------------------
+
+// CombinedServer は、自動生成された `handler.ServerInterface` を満たすための複合構造体です。
+// 分割して実装した各ハンドラーへ処理を委譲（Proxy）します。
+type CombinedServer struct {
+	*handler.TodoHandler
+	*handler.HealthHandler
+}
+
+// 1. ヘルスチェックの委譲
+func (c *CombinedServer) CheckHealth(w http.ResponseWriter, r *http.Request) {
+	c.HealthHandler.CheckHealth(w, r)
+}
+
+// 2. TODO作成の委譲
+func (c *CombinedServer) CreateTodo(w http.ResponseWriter, r *http.Request) {
+	c.TodoHandler.CreateTodo(w, r)
+}
+
+// 3. TODO取得の委譲
+func (c *CombinedServer) GetTodoById(w http.ResponseWriter, r *http.Request, id int64) {
+	c.TodoHandler.GetTodoById(w, r, id)
 }
