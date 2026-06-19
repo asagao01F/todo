@@ -6,15 +6,13 @@ import (
 	"strconv"
 	"time"
 	"todo/base/model"
-	"todo/base/usecase" // 今後作成するusecaseパッケージ
+	"todo/base/usecase"
 )
 
-// TodoHandler は HTTPリクエストを受け付け、Usecaseを呼び出す構造体です
 type TodoHandler struct {
-	todoUsecase usecase.TodoRepository // 本来はusecaseのインターフェースを指定
+	todoUsecase usecase.TodoRepository
 }
 
-// NewTodoHandler はハンドラーのインスタンスを生成します（DI用）
 func NewTodoHandler(u usecase.TodoRepository) *TodoHandler {
 	return &TodoHandler{todoUsecase: u}
 }
@@ -22,35 +20,38 @@ func NewTodoHandler(u usecase.TodoRepository) *TodoHandler {
 // -----------------------------------------------------------------------------
 // 1. Create: POST /todos
 // -----------------------------------------------------------------------------
-func (h *TodoHandler) Create(w http.ResponseWriter, r *http.Request) {
+// CreateTodo は自動生成された ServerInterface のメンバです
+func (h *TodoHandler) CreateTodo(w http.ResponseWriter, r *http.Request) {
+	// CreateTodoRequest 型は openapi.gen.go で自動生成されたものを使用
 	var req CreateTodoRequest
-	// リクエストボディのJSONを構造体にパース
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		h.respondWithError(w, http.StatusBadRequest, "不正なリクエスト形式です", nil)
 		return
 	}
 
-	// 本来はここでバリデーション（req.Titleの空チェックなど）を行う
+	// ポインタ型（オプショナル）の Description を安全に扱うための処理
+	var desc string
+	if req.Description != nil {
+		desc = *req.Description
+	}
 
-	// DTOからビジネスロジック用のModel（内部ドメイン）へ変換
 	todo := &model.Todo{
 		Title:       req.Title,
-		Description: req.Description,
+		Description: desc,
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
 	}
 
-	// Usecase（Transaction層）の呼び出し
 	if err := h.todoUsecase.Create(r.Context(), todo); err != nil {
 		h.respondWithError(w, http.StatusInternalServerError, "データの保存に失敗しました", []string{err.Error()})
 		return
 	}
 
-	// レスポンス用のDTOに変換して返却
+	// TodoResponse 型は openapi.gen.go で自動生成されたものを使用
 	res := TodoResponse{
-		ID:          todo.ID,
+		Id:          &todo.ID, // OpenAPIの定義に合わせ、ポインタやフィールド名のケースが自動調整されます
 		Title:       todo.Title,
-		Description: todo.Description,
+		Description: req.Description, // ポインタをそのまま渡せます
 		Completed:   todo.Completed,
 		CreatedAt:   todo.CreatedAt,
 	}
@@ -61,24 +62,17 @@ func (h *TodoHandler) Create(w http.ResponseWriter, r *http.Request) {
 // -----------------------------------------------------------------------------
 // 2. Read (Single): GET /todos/{id}
 // -----------------------------------------------------------------------------
-func (h *TodoHandler) GetByID(w http.ResponseWriter, r *http.Request) {
-	// ルーターで定義した {id} の値を文字列で取得
-	idStr := r.PathValue("id") 
-	
-	id, err := strconv.ParseInt(idStr, 10, 64)
-	if err != nil {
-		h.respondWithError(w, http.StatusBadRequest, "無効なID形式です", nil)
-		return
-	}
-
-	// 本来はここで usecase からデータを取得
-	// todo, err := h.todoUsecase.GetByID(r.Context(), id)
+// GetTodoById は自動生成された ServerInterface のメンバです
+// ※ 第3引数に最初からパース済みの id (int64) が入ってくるため、strconvの処理が不要になります！
+func (h *TodoHandler) GetTodoById(w http.ResponseWriter, r *http.Request, id int64) {
+	idStr := strconv.FormatInt(id, 10)
 
 	// 一旦スタブ（仮）レスポンスを返却
+	desc := "これはパスパラメータから取得したID: " + idStr + " のタスクです"
 	res := TodoResponse{
-		ID:          id,
+		Id:          &id,
 		Title:       "仮のタスクタイトル",
-		Description: "これはパスパラメータから取得したID: " + idStr + " のタスクです",
+		Description: &desc,
 		Completed:   false,
 		CreatedAt:   time.Now(),
 	}
@@ -90,18 +84,19 @@ func (h *TodoHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 // 共通ヘルパー関数（JSON返却用）
 // -----------------------------------------------------------------------------
 
-// respondWithJSON は一貫したフォーマットで正常系JSONを返却するためのヘルパーです
 func (h *TodoHandler) respondWithJSON(w http.ResponseWriter, status int, payload interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(payload)
 }
 
-// respondWithError は一貫したフォーマットで異常系JSON（エラー）を返却するためのヘルパーです
 func (h *TodoHandler) respondWithError(w http.ResponseWriter, status int, message string, details []string) {
+	// ErrorResponse も自動生成されたものを使用
 	res := ErrorResponse{
 		Message: message,
-		Details: details,
+	}
+	if details != nil {
+		res.Details = &details
 	}
 	h.respondWithJSON(w, status, res)
 }

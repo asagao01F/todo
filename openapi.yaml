@@ -1,0 +1,169 @@
+openapi: 3.0.3
+info:
+  title: TODO管理・ヘルスチェックAPI
+  version: 1.0.0
+
+paths:
+  # ---------------------------------------------------------------------------
+  # 1. ヘルスチェック
+  # ---------------------------------------------------------------------------
+  /health:
+    get:
+      summary: ヘルスチェック
+      description: アプリケーションのステータスとデータベースの接続状態を確認します。
+      operationId: checkHealth
+      responses:
+        '200':
+          description: すべて正常な場合
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCheckResponse'
+        '503':
+          description: データベース接続エラー、または初期化失敗の場合
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCheckResponse'
+
+  # ---------------------------------------------------------------------------
+  # 2. TODO（作成）
+  # ---------------------------------------------------------------------------
+  /todos:
+    post:
+      summary: TODOを作成
+      description: 新しいTODOタスクを作成します。
+      operationId: createTodo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTodoRequest'
+      responses:
+        '201':
+          description: 作成成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TodoResponse'
+        '400':
+          description: 不正なリクエスト形式
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: サーバー内部エラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ---------------------------------------------------------------------------
+  # 3. TODO（取得）
+  # ---------------------------------------------------------------------------
+  /todos/{id}:
+    get:
+      summary: TODOをIDで取得
+      description: パスパラメータで指定されたIDのTODOを取得します。
+      operationId: getTodoById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: TODOのID
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 取得成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TodoResponse'
+        '400':
+          description: 無効なID形式
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+# -----------------------------------------------------------------------------
+# データ構造（スキーマ）定義
+# -----------------------------------------------------------------------------
+components:
+  schemas:
+    # ヘルスチェックのレスポンス
+    HealthCheckResponse:
+      type: object
+      required:
+        - status
+        - timestamp
+        - database
+      properties:
+        status:
+          type: string
+          example: "OK"
+        timestamp:
+          type: string
+          example: "2026-06-20T01:10:36Z"
+        database:
+          type: string
+          example: "CONNECTED"
+
+    # TODO作成リクエスト
+    CreateTodoRequest:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          example: "買い物に行く"
+        description:
+          type: string
+          example: "牛乳と卵を買う"
+
+    # TODOレスポンス
+    TodoResponse:
+      type: object
+      required:
+        - id
+        - title
+        - completed
+        - createdAt
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        title:
+          type: string
+          example: "買い物に行く"
+        description:
+          type: string
+          example: "牛乳と卵を買う"
+        completed:
+          type: boolean
+          example: false
+        createdAt:
+          type: string
+          format: date-time
+          example: "2026-06-20T01:10:36Z"
+
+    # 共通エラーレスポンス
+    ErrorResponse:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          example: "不正なリクエスト形式です"
+        details:
+          type: array
+          items:
+            type: string
+          example: ["json: cannot unmarshal number into Go struct field..."]
