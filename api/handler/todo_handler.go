@@ -49,10 +49,10 @@ func (h *TodoHandler) CreateTodo(w http.ResponseWriter, r *http.Request) {
 
 	// TodoResponse 型は openapi.gen.go で自動生成されたものを使用
 	res := TodoResponse{
-		Id:          &todo.ID, // OpenAPIの定義に合わせ、ポインタやフィールド名のケースが自動調整されます
+		Id:          int64(todo.ID), // OpenAPIの定義に合わせ、ポインタやフィールド名のケースが自動調整されます
 		Title:       todo.Title,
 		Description: req.Description, // ポインタをそのまま渡せます
-		Completed:   todo.Completed,
+		Completed:   todo.IsCompleted,
 		CreatedAt:   todo.CreatedAt,
 	}
 
@@ -70,7 +70,7 @@ func (h *TodoHandler) GetTodoById(w http.ResponseWriter, r *http.Request, id int
 	// 一旦スタブ（仮）レスポンスを返却
 	desc := "これはパスパラメータから取得したID: " + idStr + " のタスクです"
 	res := TodoResponse{
-		Id:          &id,
+		Id:          id,
 		Title:       "仮のタスクタイトル",
 		Description: &desc,
 		Completed:   false,

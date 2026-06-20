@@ -3,29 +3,21 @@ package main
 import (
 	"net/http"
 	"todo/api/handler"
+	"github.com/go-chi/chi/v5"
 )
 
-// NewRouter は、すべてのAPIルートを定義したマルチプレクサ（ルーター）を返します
-func NewRouter(todoHandler *handler.TodoHandler, healthHandler *handler.HealthHandler) *http.ServeMux {
-	mux := http.NewServeMux()
+func NewRouter(todoHandler *handler.TodoHandler, healthHandler *handler.HealthHandler) chi.Router {
+	// 【変更】Go標準の ServeMux ではなく、chi のルーターを生成
+	r := chi.NewRouter()
 
-	// -----------------------------------------------------------------------------
-	// OpenAPIが生成したルーティングを一括登録する
-	// -----------------------------------------------------------------------------
-	
-	// 各ハンドラーを結合した、OpenAPI用の総合サーバーを作成
-	// (後述の複合構造体をここで使います)
 	apiServer := &CombinedServer{
 		TodoHandler:   todoHandler,
 		HealthHandler: healthHandler,
 	}
 
-	// 自動生成された HandlerFromMux 関数に mux と apiServer を渡すだけで、
-	// YAMLに書かれたすべてのルート (GET /health, POST /todos, GET /todos/{id}) が
-	// 自動的に Go 1.22 形式で mux に登録されます。
-	handler.HandlerFromMux(apiServer, mux)
+	handler.HandlerFromMux(apiServer, r)
 
-	return mux
+	return r
 }
 
 // -----------------------------------------------------------------------------
@@ -33,7 +25,6 @@ func NewRouter(todoHandler *handler.TodoHandler, healthHandler *handler.HealthHa
 // -----------------------------------------------------------------------------
 
 // CombinedServer は、自動生成された `handler.ServerInterface` を満たすための複合構造体です。
-// 分割して実装した各ハンドラーへ処理を委譲（Proxy）します。
 type CombinedServer struct {
 	*handler.TodoHandler
 	*handler.HealthHandler
