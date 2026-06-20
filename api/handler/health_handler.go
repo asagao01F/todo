@@ -1,18 +1,20 @@
 package handler
 
 import (
-	"database/sql"
 	"encoding/json"
 	"net/http"
 	"time"
+	"gorm.io/gorm"
 )
 
 type HealthHandler struct {
-	db *sql.DB
+	// 【変更】*sql.DB から *gorm.DB に変更
+	db *gorm.DB
 }
 
 // NewHealthHandler はHealthHandlerのインスタンスを生成します
-func NewHealthHandler(db *sql.DB) *HealthHandler {
+// 【変更】引数の型を *gorm.DB に変更
+func NewHealthHandler(db *gorm.DB) *HealthHandler {
 	return &HealthHandler{db: db}
 }
 
@@ -28,7 +30,19 @@ func (h *HealthHandler) CheckHealth(w http.ResponseWriter, r *http.Request) {
 
 	// 1. PostgreSQLへの疎通確認 (Readiness Check)
 	if h.db != nil {
-		if err := h.db.PingContext(r.Context()); err != nil {
+		// 【変更】GORMから内部の *sql.DB を取得する
+		sqlDB, err := h.db.DB()
+		if err != nil {
+			// *sql.DBの取得自体に失敗した場合
+			w.WriteHeader(http.StatusServiceUnavailable)
+			res.Status = "FAIL"
+			res.Database = "ERROR"
+			_ = json.NewEncoder(w).Encode(res)
+			return
+		}
+
+		// 取得した sqlDB を使って Ping を打つ
+		if err := sqlDB.PingContext(r.Context()); err != nil {
 			// DBとの接続が切れている場合
 			w.WriteHeader(http.StatusServiceUnavailable) // 503を返す
 			res.Status = "FAIL"
