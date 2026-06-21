@@ -42,7 +42,7 @@ func TestTodoUsecase_CreateTodo(t *testing.T) {
 
 	t.Run("成功: バリデーションを通過し、TODOが正常に作成されること", func(t *testing.T) {
 		repo, mock := setupMockRepository(t)
-		uc := NewTodoUsecase(repo)
+		uc := NewTodoUsecase(&repo)
 
 		title := "テストタスク"
 		description := "詳細な説明文"
@@ -80,7 +80,7 @@ func TestTodoUsecase_CreateTodo(t *testing.T) {
 
 	t.Run("失敗: タイトルが空（空白のみ）の場合、バリデーションエラーになること", func(t *testing.T) {
 		repo, _ := setupMockRepository(t)
-		uc := NewTodoUsecase(repo)
+		uc := NewTodoUsecase(&repo)
 
 		todo, err := uc.CreateTodo(ctx, "   ", "説明文")
 
@@ -97,7 +97,7 @@ func TestTodoUsecase_CreateTodo(t *testing.T) {
 
 	t.Run("失敗: リポジトリ側(DB)でエラーが発生した場合、エラーがそのまま返ること", func(t *testing.T) {
 		repo, mock := setupMockRepository(t)
-		uc := NewTodoUsecase(repo)
+		uc := NewTodoUsecase(&repo)
 
 		mock.ExpectBegin()
 		// 【修正】ここも期待するテーブル名を "todo" に変更
@@ -125,7 +125,7 @@ func TestTodoUsecase_GetTodoByID(t *testing.T) {
 
 	t.Run("成功: レコードが存在する場合、データが返ること", func(t *testing.T) {
 		repo, mock := setupMockRepository(t)
-		uc := NewTodoUsecase(repo)
+		uc := NewTodoUsecase(&repo)
 
 		targetID := uint(10)
 		now := time.Now()
@@ -151,7 +151,7 @@ func TestTodoUsecase_GetTodoByID(t *testing.T) {
 
 	t.Run("失敗: レコードが存在しない場合（リポジトリがnilを返した場合）、todo not found エラーになること", func(t *testing.T) {
 		repo, mock := setupMockRepository(t)
-		uc := NewTodoUsecase(repo)
+		uc := NewTodoUsecase(&repo)
 
 		targetID := uint(999)
 

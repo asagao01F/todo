@@ -15,10 +15,10 @@ type TodoUsecaseInterface interface {
 }
 
 type TodoUsecase struct {
-	todoRepo repository.PostgresTodoRepository // 以前定義したリポジトリ
+	todoRepo *repository.PostgresTodoRepository // 以前定義したリポジトリ
 }
 
-func NewTodoUsecase(todoRepo repository.PostgresTodoRepository) *TodoUsecase {
+func NewTodoUsecase(todoRepo *repository.PostgresTodoRepository) *TodoUsecase {
 	return &TodoUsecase{todoRepo: todoRepo}
 }
 

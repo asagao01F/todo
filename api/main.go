@@ -62,9 +62,10 @@ func main() {
     // 3. リポジトリ・ハンドラーの初期化
     todoRepo := repository.NewPostgresTodoRepository(db) // エラーが解消されます
     healthUsecase := usecase.NewHealthUsecase(db) // 修正: HealthUsecaseの初期化も追加
+    todoUsecase := usecase.NewTodoUsecase(todoRepo) // 修正: TodoUsecaseの初期化も追加
 
-    todoHandler := handler.NewTodoHandler(todoRepo)
     healthHandler := handler.NewHealthHandler(healthUsecase) // 修正: healthHandler を作成
+    todoHandler := handler.NewTodoHandler(todoUsecase) // 修正: todoHandler を作成
 
     // 4. ルーターの作成
     router := NewRouter(todoHandler, healthHandler)
