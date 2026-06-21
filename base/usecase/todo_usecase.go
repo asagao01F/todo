@@ -1,15 +1,54 @@
 package usecase
 
 import (
-    "context"
-    "todo/base/model"
+	"context"
+	"errors"
+	"strings"
+	"todo/base/model"
+    "todo/base/repository"
 )
 
-// Usecase側が「俺はこれらの機能が欲しい」とインターフェースを宣言する
-type TodoRepository interface {
-    Create(ctx context.Context, todo *model.Todo) error
+// TodoUsecaseInterface は Handlerが呼び出すためのインターフェース
+type TodoUsecaseInterface interface {
+	CreateTodo(ctx context.Context, title string, description string) (*model.Todo, error)
+	GetTodoByID(ctx context.Context, id uint) (*model.Todo, error)
 }
 
 type TodoUsecase struct {
-    repo TodoRepository // Usecaseは自分が定義したインターフェースに依存する
+	todoRepo repository.PostgresTodoRepository // 以前定義したリポジトリ
+}
+
+func NewTodoUsecase(todoRepo repository.PostgresTodoRepository) *TodoUsecase {
+	return &TodoUsecase{todoRepo: todoRepo}
+}
+
+// 1. CreateTodo: ビジネスロジックを伴うTODO作成
+func (u *TodoUsecase) CreateTodo(ctx context.Context, title string, description string) (*model.Todo, error) {
+	if strings.TrimSpace(title) == "" {
+		return nil, errors.New("todo title cannot be empty")
+	}
+
+	todo := &model.Todo{
+		Title:       title,
+		Description: description,
+		// time.Now() などの生成やID自動採番は、UsecaseやDB（GORM）の責務にします
+	}
+
+	if err := u.todoRepo.Create(ctx, todo); err != nil {
+		return nil, err
+	}
+
+	return todo, nil
+}
+
+// 2. GetTodoByID: 1件取得（スタブから本番用に切り替え可能に）
+func (u *TodoUsecase) GetTodoByID(ctx context.Context, id uint) (*model.Todo, error) {
+	todo, err := u.todoRepo.FindByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if todo == nil {
+		return nil, errors.New("todo not found")
+	}
+	return todo, nil
 }

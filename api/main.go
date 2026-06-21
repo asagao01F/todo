@@ -7,6 +7,7 @@ import (
     "time"
     "todo/api/handler"
     "todo/base/repository"
+    "todo/base/usecase"
     "todo/config"
 
     "gorm.io/driver/postgres"
@@ -60,9 +61,10 @@ func main() {
 
     // 3. リポジトリ・ハンドラーの初期化
     todoRepo := repository.NewPostgresTodoRepository(db) // エラーが解消されます
+    healthUsecase := usecase.NewHealthUsecase(db) // 修正: HealthUsecaseの初期化も追加
 
     todoHandler := handler.NewTodoHandler(todoRepo)
-    healthHandler := handler.NewHealthHandler(db) // 【注意】HealthHandlerが *sql.DB を期待している場合は sqlDB を渡す
+    healthHandler := handler.NewHealthHandler(healthUsecase) // 修正: healthHandler を作成
 
     // 4. ルーターの作成
     router := NewRouter(todoHandler, healthHandler)
