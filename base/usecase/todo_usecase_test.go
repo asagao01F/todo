@@ -55,14 +55,14 @@ func TestTodoUsecase_CreateTodo(t *testing.T) {
 				title,                // title
 				description,          // description
 				false,                // is_completed
-				nil,                  // due_date
+				sqlmock.AnyArg(),     // due_date
 				sqlmock.AnyArg(),     // created_at
 				sqlmock.AnyArg(),     // updated_at
 			).
 			WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(uint(1)))
 		mock.ExpectCommit()
 
-		todo, err := uc.CreateTodo(ctx, title, description, &[]int64{1}[0])
+		todo, err := uc.CreateTodo(ctx, title, description, &[]int64{1}[0], time.Now())
 
 		if err != nil {
 			t.Errorf("unexpected error: %v", err)
@@ -82,7 +82,7 @@ func TestTodoUsecase_CreateTodo(t *testing.T) {
 		repo, _ := setupMockRepository(t)
 		uc := NewTodoUsecase(&repo)
 
-		todo, err := uc.CreateTodo(ctx, "   ", "説明文", &[]int64{1}[0])
+		todo, err := uc.CreateTodo(ctx, "   ", "説明文", &[]int64{1}[0], time.Now())
 
 		if err == nil {
 			t.Error("expected error, got nil")
@@ -105,7 +105,7 @@ func TestTodoUsecase_CreateTodo(t *testing.T) {
 			WillReturnError(fmt.Errorf("db connection error"))
 		mock.ExpectRollback()
 
-		todo, err := uc.CreateTodo(ctx, "タイトル", "説明", &[]int64{1}[0])
+		todo, err := uc.CreateTodo(ctx, "タイトル", "説明", &[]int64{1}[0], time.Now())
 
 		if err == nil {
 			t.Error("expected error, got nil")
@@ -133,8 +133,8 @@ func TestTodoUsecase_GetTodoByID(t *testing.T) {
 		// 【修正】テーブル名を "todo" に変更
 		mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "todo" WHERE "todo"."id" = $1 ORDER BY "todo"."id" LIMIT $2`)).
 			WithArgs(targetID, 1).
-			WillReturnRows(sqlmock.NewRows([]string{"id", "title", "description", "created_at"}).
-				AddRow(targetID, "既存タスク", "既存の説明", now))
+			WillReturnRows(sqlmock.NewRows([]string{"id", "title", "description", "due_date", "created_at"}).
+				AddRow(targetID, "既存タスク", "既存の説明", now, now))
 
 		todo, err := uc.GetTodoByID(ctx, targetID)
 

@@ -22,9 +22,10 @@ type AccountResponse struct {
 
 // CreateTodoRequest defines model for CreateTodoRequest.
 type CreateTodoRequest struct {
-	AccountId   *int64  `json:"accountId,omitempty"`
-	Description *string `json:"description,omitempty"`
-	Title       string  `json:"title"`
+	AccountId   *int64     `json:"accountId,omitempty"`
+	Description *string    `json:"description,omitempty"`
+	DueDate     *time.Time `json:"dueDate,omitempty"`
+	Title       string     `json:"title"`
 }
 
 // ErrorResponse defines model for ErrorResponse.
@@ -52,6 +53,7 @@ type TodoResponse struct {
 	Completed   bool      `json:"completed"`
 	CreatedAt   time.Time `json:"createdAt"`
 	Description *string   `json:"description,omitempty"`
+	DueDate     time.Time `json:"dueDate"`
 	Id          int64     `json:"id"`
 	Title       string    `json:"title"`
 }

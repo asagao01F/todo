@@ -191,6 +191,10 @@ components:
           type: integer
           format: int64
           example: 1
+        dueDate:
+          type: string
+          format: date-time
+          example: "2026-06-30T12:00:00Z"
         title:
           type: string
           example: "買い物に行く"
@@ -206,6 +210,7 @@ components:
         - title
         - completed
         - createdAt
+        - dueDate
       properties:
         id:
           type: integer
@@ -224,6 +229,10 @@ components:
           type: string
           format: date-time
           example: "2026-06-20T01:10:36Z"
+        dueDate:
+          type: string
+          format: date-time
+          example: "2026-06-30T12:00:00Z"
 
 # アカウント登録リクエスト（新規追加）
     RegisterAccountRequest:

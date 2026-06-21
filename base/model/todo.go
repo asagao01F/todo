@@ -8,7 +8,7 @@ type Todo struct {
     Title       string     
     Description string     
     IsCompleted bool       
-    DueDate     *time.Time 
+    DueDate     time.Time 
     CreatedAt   time.Time  
     UpdatedAt   time.Time  
 }
