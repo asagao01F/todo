@@ -13,7 +13,6 @@ import (
 
 // 1. HealthUsecaseの実態の代わりに使う「手動モック」を定義
 type mockHealthUsecase struct {
-	// 期待する診断結果をテストケースごとに外から注入できるようにする
 	mockResult usecase.HealthStatus
 }
 

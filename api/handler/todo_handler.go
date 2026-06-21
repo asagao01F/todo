@@ -7,7 +7,6 @@ import (
 )
 
 type TodoHandler struct {
-	// 【変更】Repositoryではなく、Usecaseのインターフェースに依存させる
 	todoUsecase usecase.TodoUsecaseInterface
 }
 
