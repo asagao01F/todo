@@ -12,6 +12,7 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"github.com/oapi-codegen/runtime/types"
 )
 
 // GORMとsqlmockを初期化するヘルパー関数
@@ -164,7 +165,7 @@ func TestPostgresAccountRepository_FindByEmail(t *testing.T) {
 		if err != nil {
 			t.Errorf("unexpected error: %v", err)
 		}
-		if res == nil || res.Email != targetEmail || res.ID != 10 {
+		if res == nil || res.Email != types.Email(targetEmail) || res.ID != 10 {
 			t.Errorf("unexpected result: %+v", res)
 		}
 	})

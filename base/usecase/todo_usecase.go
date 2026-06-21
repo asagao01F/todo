@@ -8,9 +8,8 @@ import (
     "todo/base/repository"
 )
 
-// TodoUsecaseInterface は Handlerが呼び出すためのインターフェース
 type TodoUsecaseInterface interface {
-	CreateTodo(ctx context.Context, title string, description string) (*model.Todo, error)
+	CreateTodo(ctx context.Context, title string, description string, accountId *int64) (*model.Todo, error)
 	GetTodoByID(ctx context.Context, id uint) (*model.Todo, error)
 }
 
@@ -23,7 +22,7 @@ func NewTodoUsecase(todoRepo *repository.PostgresTodoRepository) *TodoUsecase {
 }
 
 // 1. CreateTodo: ビジネスロジックを伴うTODO作成
-func (u *TodoUsecase) CreateTodo(ctx context.Context, title string, description string) (*model.Todo, error) {
+func (u *TodoUsecase) CreateTodo(ctx context.Context, title string, description string, accountId *int64) (*model.Todo, error) {
 	if strings.TrimSpace(title) == "" {
 		return nil, errors.New("todo title cannot be empty")
 	}
@@ -31,6 +30,7 @@ func (u *TodoUsecase) CreateTodo(ctx context.Context, title string, description 
 	todo := &model.Todo{
 		Title:       title,
 		Description: description,
+		AccountId:   accountId,
 		// time.Now() などの生成やID自動採番は、UsecaseやDB（GORM）の責務にします
 	}
 

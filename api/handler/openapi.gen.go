@@ -4,266 +4,351 @@
 package handler
 
 import (
-    "fmt"
-    "net/http"
-    "time"
-    "github.com/go-chi/chi/v5"
-    "github.com/oapi-codegen/runtime"
+	"fmt"
+	"net/http"
+	"time"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/oapi-codegen/runtime"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 )
+
+// AccountResponse defines model for AccountResponse.
+type AccountResponse struct {
+	Email    openapi_types.Email `json:"email"`
+	Id       int64               `json:"id"`
+	Username string              `json:"username"`
+}
 
 // CreateTodoRequest defines model for CreateTodoRequest.
 type CreateTodoRequest struct {
-    Description *string `json:"description,omitempty"`
-    Title       string  `json:"title"`
+	AccountId   *int64  `json:"accountId,omitempty"`
+	Description *string `json:"description,omitempty"`
+	Title       string  `json:"title"`
 }
 
 // ErrorResponse defines model for ErrorResponse.
 type ErrorResponse struct {
-    Details *[]string `json:"details,omitempty"`
-    Message string    `json:"message"`
+	Details *[]string `json:"details,omitempty"`
+	Message string    `json:"message"`
 }
 
 // HealthCheckResponse defines model for HealthCheckResponse.
 type HealthCheckResponse struct {
-    Database  string `json:"database"`
-    Status    string `json:"status"`
-    Timestamp string `json:"timestamp"`
+	Database  string `json:"database"`
+	Status    string `json:"status"`
+	Timestamp string `json:"timestamp"`
+}
+
+// RegisterAccountRequest defines model for RegisterAccountRequest.
+type RegisterAccountRequest struct {
+	Email    openapi_types.Email `json:"email"`
+	Password string              `json:"password"`
+	Username string              `json:"username"`
 }
 
 // TodoResponse defines model for TodoResponse.
 type TodoResponse struct {
-    Completed   bool      `json:"completed"`
-    CreatedAt   time.Time `json:"createdAt"`
-    Description *string   `json:"description,omitempty"`
-    Id          int64     `json:"id"`
-    Title       string    `json:"title"`
+	Completed   bool      `json:"completed"`
+	CreatedAt   time.Time `json:"createdAt"`
+	Description *string   `json:"description,omitempty"`
+	Id          int64     `json:"id"`
+	Title       string    `json:"title"`
 }
+
+// RegisterAccountJSONRequestBody defines body for RegisterAccount for application/json ContentType.
+type RegisterAccountJSONRequestBody = RegisterAccountRequest
 
 // CreateTodoJSONRequestBody defines body for CreateTodo for application/json ContentType.
 type CreateTodoJSONRequestBody = CreateTodoRequest
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
-    // ヘルスチェック
-    // (GET /health)
-    CheckHealth(w http.ResponseWriter, r *http.Request)
-    // TODOを作成
-    // (POST /todos)
-    CreateTodo(w http.ResponseWriter, r *http.Request)
-    // TODOをIDで取得
-    // (GET /todos/{id})
-    GetTodoById(w http.ResponseWriter, r *http.Request, id int64)
+	// アカウント登録
+	// (POST /accounts)
+	RegisterAccount(w http.ResponseWriter, r *http.Request)
+	// アカウント情報をIDで取得
+	// (GET /accounts/{id})
+	GetAccountById(w http.ResponseWriter, r *http.Request, id int64)
+	// ヘルスチェック
+	// (GET /health)
+	CheckHealth(w http.ResponseWriter, r *http.Request)
+	// TODOを作成
+	// (POST /todos)
+	CreateTodo(w http.ResponseWriter, r *http.Request)
+	// TODOをIDで取得
+	// (GET /todos/{id})
+	GetTodoById(w http.ResponseWriter, r *http.Request, id int64)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
 
 type Unimplemented struct{}
 
+// アカウント登録
+// (POST /accounts)
+func (_ Unimplemented) RegisterAccount(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// アカウント情報をIDで取得
+// (GET /accounts/{id})
+func (_ Unimplemented) GetAccountById(w http.ResponseWriter, r *http.Request, id int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // ヘルスチェック
 // (GET /health)
 func (_ Unimplemented) CheckHealth(w http.ResponseWriter, r *http.Request) {
-    w.WriteHeader(http.StatusNotImplemented)
+	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // TODOを作成
 // (POST /todos)
 func (_ Unimplemented) CreateTodo(w http.ResponseWriter, r *http.Request) {
-    w.WriteHeader(http.StatusNotImplemented)
+	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // TODOをIDで取得
 // (GET /todos/{id})
 func (_ Unimplemented) GetTodoById(w http.ResponseWriter, r *http.Request, id int64) {
-    w.WriteHeader(http.StatusNotImplemented)
+	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
 type ServerInterfaceWrapper struct {
-    Handler            ServerInterface
-    HandlerMiddlewares []MiddlewareFunc
-    ErrorHandlerFunc   func(w http.ResponseWriter, r *http.Request, err error)
+	Handler            ServerInterface
+	HandlerMiddlewares []MiddlewareFunc
+	ErrorHandlerFunc   func(w http.ResponseWriter, r *http.Request, err error)
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
 
+// RegisterAccount operation middleware
+func (siw *ServerInterfaceWrapper) RegisterAccount(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RegisterAccount(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// GetAccountById operation middleware
+func (siw *ServerInterfaceWrapper) GetAccountById(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id int64
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "id", runtime.ParamLocationPath, chi.URLParam(r, "id"), &id)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAccountById(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
 // CheckHealth operation middleware
 func (siw *ServerInterfaceWrapper) CheckHealth(w http.ResponseWriter, r *http.Request) {
-    ctx := r.Context()
+	ctx := r.Context()
 
-    handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        siw.Handler.CheckHealth(w, r)
-    }))
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CheckHealth(w, r)
+	}))
 
-    for _, middleware := range siw.HandlerMiddlewares {
-        handler = middleware(handler)
-    }
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
 
-    handler.ServeHTTP(w, r.WithContext(ctx))
+	handler.ServeHTTP(w, r.WithContext(ctx))
 }
 
 // CreateTodo operation middleware
 func (siw *ServerInterfaceWrapper) CreateTodo(w http.ResponseWriter, r *http.Request) {
-    ctx := r.Context()
+	ctx := r.Context()
 
-    handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        siw.Handler.CreateTodo(w, r)
-    }))
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateTodo(w, r)
+	}))
 
-    for _, middleware := range siw.HandlerMiddlewares {
-        handler = middleware(handler)
-    }
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
 
-    handler.ServeHTTP(w, r.WithContext(ctx))
+	handler.ServeHTTP(w, r.WithContext(ctx))
 }
 
 // GetTodoById operation middleware
 func (siw *ServerInterfaceWrapper) GetTodoById(w http.ResponseWriter, r *http.Request) {
-    ctx := r.Context()
+	ctx := r.Context()
 
-    var err error
+	var err error
 
-    // ------------- Path parameter "id" -------------
-    var id int64
+	// ------------- Path parameter "id" -------------
+	var id int64
 
-    err = runtime.BindStyledParameterWithLocation("simple", false, "id", runtime.ParamLocationPath, chi.URLParam(r, "id"), &id)
-    if err != nil {
-        siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
-        return
-    }
+	err = runtime.BindStyledParameterWithLocation("simple", false, "id", runtime.ParamLocationPath, chi.URLParam(r, "id"), &id)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
 
-    handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        siw.Handler.GetTodoById(w, r, id)
-    }))
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetTodoById(w, r, id)
+	}))
 
-    for _, middleware := range siw.HandlerMiddlewares {
-        handler = middleware(handler)
-    }
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
 
-    handler.ServeHTTP(w, r.WithContext(ctx))
+	handler.ServeHTTP(w, r.WithContext(ctx))
 }
 
 type UnescapedCookieParamError struct {
-    ParamName string
-    Err       error
+	ParamName string
+	Err       error
 }
 
 func (e *UnescapedCookieParamError) Error() string {
-    return fmt.Sprintf("error unescaping cookie parameter '%s'", e.ParamName)
+	return fmt.Sprintf("error unescaping cookie parameter '%s'", e.ParamName)
 }
 
 func (e *UnescapedCookieParamError) Unwrap() error {
-    return e.Err
+	return e.Err
 }
 
 type UnmarshalingParamError struct {
-    ParamName string
-    Err       error
+	ParamName string
+	Err       error
 }
 
 func (e *UnmarshalingParamError) Error() string {
-    return fmt.Sprintf("Error unmarshaling parameter %s as JSON: %s", e.ParamName, e.Err.Error())
+	return fmt.Sprintf("Error unmarshaling parameter %s as JSON: %s", e.ParamName, e.Err.Error())
 }
 
 func (e *UnmarshalingParamError) Unwrap() error {
-    return e.Err
+	return e.Err
 }
 
 type RequiredParamError struct {
-    ParamName string
+	ParamName string
 }
 
 func (e *RequiredParamError) Error() string {
-    return fmt.Sprintf("Query argument %s is required, but not found", e.ParamName)
+	return fmt.Sprintf("Query argument %s is required, but not found", e.ParamName)
 }
 
 type RequiredHeaderError struct {
-    ParamName string
-    Err       error
+	ParamName string
+	Err       error
 }
 
 func (e *RequiredHeaderError) Error() string {
-    return fmt.Sprintf("Header parameter %s is required, but not found", e.ParamName)
+	return fmt.Sprintf("Header parameter %s is required, but not found", e.ParamName)
 }
 
 func (e *RequiredHeaderError) Unwrap() error {
-    return e.Err
+	return e.Err
 }
 
 type InvalidParamFormatError struct {
-    ParamName string
-    Err       error
+	ParamName string
+	Err       error
 }
 
 func (e *InvalidParamFormatError) Error() string {
-    return fmt.Sprintf("Invalid format for parameter %s: %s", e.ParamName, e.Err.Error())
+	return fmt.Sprintf("Invalid format for parameter %s: %s", e.ParamName, e.Err.Error())
 }
 
 func (e *InvalidParamFormatError) Unwrap() error {
-    return e.Err
+	return e.Err
 }
 
 type TooManyValuesForParamError struct {
-    ParamName string
-    Count     int
+	ParamName string
+	Count     int
 }
 
 func (e *TooManyValuesForParamError) Error() string {
-    return fmt.Sprintf("Expected one value for %s, got %d", e.ParamName, e.Count)
+	return fmt.Sprintf("Expected one value for %s, got %d", e.ParamName, e.Count)
 }
 
 // Handler creates http.Handler with routing matching OpenAPI spec.
 func Handler(si ServerInterface) http.Handler {
-    return HandlerWithOptions(si, ChiServerOptions{})
+	return HandlerWithOptions(si, ChiServerOptions{})
 }
 
 type ChiServerOptions struct {
-    BaseURL          string
-    BaseRouter       chi.Router
-    Middlewares      []MiddlewareFunc
-    ErrorHandlerFunc func(w http.ResponseWriter, r *http.Request, err error)
+	BaseURL          string
+	BaseRouter       chi.Router
+	Middlewares      []MiddlewareFunc
+	ErrorHandlerFunc func(w http.ResponseWriter, r *http.Request, err error)
 }
 
 // HandlerFromMux creates http.Handler with routing matching OpenAPI spec based on the provided mux.
 func HandlerFromMux(si ServerInterface, r chi.Router) http.Handler {
-    return HandlerWithOptions(si, ChiServerOptions{
-        BaseRouter: r,
-    })
+	return HandlerWithOptions(si, ChiServerOptions{
+		BaseRouter: r,
+	})
 }
 
 func HandlerFromMuxWithBaseURL(si ServerInterface, r chi.Router, baseURL string) http.Handler {
-    return HandlerWithOptions(si, ChiServerOptions{
-        BaseURL:    baseURL,
-        BaseRouter: r,
-    })
+	return HandlerWithOptions(si, ChiServerOptions{
+		BaseURL:    baseURL,
+		BaseRouter: r,
+	})
 }
 
 // HandlerWithOptions creates http.Handler with additional options
 func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handler {
-    r := options.BaseRouter
+	r := options.BaseRouter
 
-    if r == nil {
-        r = chi.NewRouter()
-    }
-    if options.ErrorHandlerFunc == nil {
-        options.ErrorHandlerFunc = func(w http.ResponseWriter, r *http.Request, err error) {
-            http.Error(w, err.Error(), http.StatusBadRequest)
-        }
-    }
-    wrapper := ServerInterfaceWrapper{
-        Handler:            si,
-        HandlerMiddlewares: options.Middlewares,
-        ErrorHandlerFunc:   options.ErrorHandlerFunc,
-    }
+	if r == nil {
+		r = chi.NewRouter()
+	}
+	if options.ErrorHandlerFunc == nil {
+		options.ErrorHandlerFunc = func(w http.ResponseWriter, r *http.Request, err error) {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+		}
+	}
+	wrapper := ServerInterfaceWrapper{
+		Handler:            si,
+		HandlerMiddlewares: options.Middlewares,
+		ErrorHandlerFunc:   options.ErrorHandlerFunc,
+	}
 
-    r.Group(func(r chi.Router) {
-        r.Get(options.BaseURL+"/health", wrapper.CheckHealth)
-    })
-    r.Group(func(r chi.Router) {
-        r.Post(options.BaseURL+"/todos", wrapper.CreateTodo)
-    })
-    r.Group(func(r chi.Router) {
-        r.Get(options.BaseURL+"/todos/{id}", wrapper.GetTodoById)
-    })
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/accounts", wrapper.RegisterAccount)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/accounts/{id}", wrapper.GetAccountById)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/health", wrapper.CheckHealth)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/todos", wrapper.CreateTodo)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/todos/{id}", wrapper.GetTodoById)
+	})
 
-    return r
+	return r
 }

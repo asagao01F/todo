@@ -61,14 +61,17 @@ func main() {
 
     // 3. リポジトリ・ハンドラーの初期化
     todoRepo := repository.NewPostgresTodoRepository(db) // エラーが解消されます
+    accountRepo := repository.NewPostgresAccountRepository(db) // 修正: AccountRepositoryの初期化も追加
     healthUsecase := usecase.NewHealthUsecase(db) // 修正: HealthUsecaseの初期化も追加
     todoUsecase := usecase.NewTodoUsecase(todoRepo) // 修正: TodoUsecaseの初期化も追加
+    accountUsecase := usecase.NewAccountUsecase(accountRepo) // 修正: AccountUsecaseの初期化も追加
 
     healthHandler := handler.NewHealthHandler(healthUsecase) // 修正: healthHandler を作成
     todoHandler := handler.NewTodoHandler(todoUsecase) // 修正: todoHandler を作成
+    accountHandler := handler.NewAccountHandler(accountUsecase) // 修正: accountHandler を作成
 
     // 4. ルーターの作成
-    router := NewRouter(todoHandler, healthHandler)
+    router := NewRouter(todoHandler, healthHandler, accountHandler)
 
     // 5. HTTPサーバーの起動設定
     serverAddr := fmt.Sprintf(":%d", cfg.API.Port)

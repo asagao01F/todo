@@ -16,12 +16,12 @@ import (
 // 1. Usecaseのインターフェースを満たすテスト用のモック構造体を定義
 type mockTodoUsecase struct {
 	// テストケースごとに期待する戻り値を外からコントロールするためのフィールド
-	fakeCreateTodoFn func(ctx context.Context, title string, description string) (*model.Todo, error)
+	fakeCreateTodoFn func(ctx context.Context, title string, description string, accountId *int64) (*model.Todo, error)
 	fakeGetTodoByIDFn func(ctx context.Context, id uint) (*model.Todo, error)
 }
 
-func (m *mockTodoUsecase) CreateTodo(ctx context.Context, title string, description string) (*model.Todo, error) {
-	return m.fakeCreateTodoFn(ctx, title, description)
+func (m *mockTodoUsecase) CreateTodo(ctx context.Context, title string, description string, accountId *int64) (*model.Todo, error) {
+	return m.fakeCreateTodoFn(ctx, title, description, accountId)
 }
 
 func (m *mockTodoUsecase) GetTodoByID(ctx context.Context, id uint) (*model.Todo, error) {
@@ -35,9 +35,10 @@ func TestTodoHandler_CreateTodo(t *testing.T) {
 	t.Run("成功: 正しいリクエストが送られた場合、201 Createdと作成データを返すこと", func(t *testing.T) {
 		// モックの振る舞いを定義
 		mockUc := &mockTodoUsecase{
-			fakeCreateTodoFn: func(ctx context.Context, title string, description string) (*model.Todo, error) {
+			fakeCreateTodoFn: func(ctx context.Context, title string, description string, accountId *int64) (*model.Todo, error) {
 				return &model.Todo{
 					ID:          123,
+					AccountId:   accountId,
 					Title:       title,
 					Description: description,
 					IsCompleted: false,
@@ -52,6 +53,7 @@ func TestTodoHandler_CreateTodo(t *testing.T) {
 		reqBody := CreateTodoRequest{
 			Title:       "テストタスク",
 			Description: &desc,
+			AccountId:   &[]int64{1}[0],
 		}
 		bodyBytes, _ := json.Marshal(reqBody)
 
@@ -99,13 +101,13 @@ func TestTodoHandler_CreateTodo(t *testing.T) {
 
 	t.Run("失敗: Usecase側でエラー（保存失敗など）が起きた場合、500 Internal Server Errorを返すこと", func(t *testing.T) {
 		mockUc := &mockTodoUsecase{
-			fakeCreateTodoFn: func(ctx context.Context, title string, description string) (*model.Todo, error) {
+			fakeCreateTodoFn: func(ctx context.Context, title string, description string, accountId *int64) (*model.Todo, error) {
 				return nil, errors.New("database breakdown")
 			},
 		}
 		handler := NewTodoHandler(mockUc)
 
-		reqBody := CreateTodoRequest{Title: "エラータスク"}
+		reqBody := CreateTodoRequest{Title: "エラータスク", AccountId: &[]int64{1}[0]}
 		bodyBytes, _ := json.Marshal(reqBody)
 
 		req := httptest.NewRequest(http.MethodPost, "/todos", bytes.NewBuffer(bodyBytes))

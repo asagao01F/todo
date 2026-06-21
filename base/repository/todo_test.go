@@ -21,7 +21,7 @@ func TestPostgresTodoRepository_Create(t *testing.T) {
     
     // テスト対象のデータ
     todo := &model.Todo{
-        AccountID:   1,
+        AccountId:   &[]int64{1}[0],
         Title:       "テストタスク",
         Description: "これは単体テストです",
         IsCompleted: false,
@@ -32,7 +32,7 @@ func TestPostgresTodoRepository_Create(t *testing.T) {
     // ※GORMのINSERTは「INSERT INTO "todo" ...」となるため、正規表現でマッチさせます
     mock.ExpectBegin() // トランザクションの開始を期待
     mock.ExpectQuery(regexp.QuoteMeta(`INSERT INTO "todo"`)).
-        WithArgs(todo.AccountID, todo.Title, todo.Description, todo.IsCompleted, todo.DueDate, sqlmock.AnyArg(), sqlmock.AnyArg()).
+        WithArgs(todo.AccountId, todo.Title, todo.Description, todo.IsCompleted, todo.DueDate, sqlmock.AnyArg(), sqlmock.AnyArg()).
         WillReturnRows(sqlmock.NewRows([]string{"id", "created_at", "updated_at"}).AddRow(uint(1), now, now))
     mock.ExpectCommit() // トランザクションのコミットを期待
 

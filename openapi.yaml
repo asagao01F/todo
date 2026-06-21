@@ -90,6 +90,74 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  # ---------------------------------------------------------------------------
+  # 4. アカウント（新規追加分）
+  # ---------------------------------------------------------------------------
+  /accounts:
+    post:
+      summary: アカウント登録
+      description: 新しいユーザーアカウントを登録します。Emailの重複チェックが行われます。
+      operationId: registerAccount
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterAccountRequest'
+      responses:
+        '201':
+          description: 登録成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountResponse'
+        '400':
+          description: バリデーションエラー、またはEmailが既に登録済みの場合
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: サーバー内部エラー（登録失敗など）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /accounts/{id}:
+    get:
+      summary: アカウント情報をIDで取得
+      description: パスパラメータで指定されたIDのアカウント情報を取得します。
+      operationId: getAccountById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: アカウントのID
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 取得成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountResponse'
+        '404':
+          description: 指定されたアカウントが見つからない場合
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: サーバー内部エラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+
 # -----------------------------------------------------------------------------
 # データ構造（スキーマ）定義
 # -----------------------------------------------------------------------------
@@ -119,6 +187,10 @@ components:
       required:
         - title
       properties:
+        accountId:
+          type: integer
+          format: int64
+          example: 1
         title:
           type: string
           example: "買い物に行く"
@@ -152,6 +224,46 @@ components:
           type: string
           format: date-time
           example: "2026-06-20T01:10:36Z"
+
+# アカウント登録リクエスト（新規追加）
+    RegisterAccountRequest:
+      type: object
+      required:
+        - username
+        - email
+        - password
+      properties:
+        username:
+          type: string
+          example: "John Doe"
+        email:
+          type: string
+          format: email
+          example: "user@example.com"
+        password:
+          type: string
+          format: password
+          example: "securePassword123"
+
+    # アカウントレスポンス（新規追加）
+    AccountResponse:
+      type: object
+      required:
+        - id
+        - username
+        - email
+      properties:
+        username:
+          type: string
+          example: "John Doe"
+        id:
+          type: integer
+          format: int64
+          example: 1
+        email:
+          type: string
+          format: email
+          example: "user@example.com"
 
     # 共通エラーレスポンス
     ErrorResponse:

@@ -51,7 +51,7 @@ func TestTodoUsecase_CreateTodo(t *testing.T) {
 		// 【修正】テーブル名を "todo" に変更し、全7カラムの引数に対応
 		mock.ExpectQuery(regexp.QuoteMeta(`INSERT INTO "todo" ("account_id","title","description","is_completed","due_date","created_at","updated_at") VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING "id"`)).
 			WithArgs(
-				uint(0),              // account_id (デフォルト)
+				uint(1),              // account_id (デフォルト)
 				title,                // title
 				description,          // description
 				false,                // is_completed
@@ -62,7 +62,7 @@ func TestTodoUsecase_CreateTodo(t *testing.T) {
 			WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(uint(1)))
 		mock.ExpectCommit()
 
-		todo, err := uc.CreateTodo(ctx, title, description)
+		todo, err := uc.CreateTodo(ctx, title, description, &[]int64{1}[0])
 
 		if err != nil {
 			t.Errorf("unexpected error: %v", err)
@@ -82,7 +82,7 @@ func TestTodoUsecase_CreateTodo(t *testing.T) {
 		repo, _ := setupMockRepository(t)
 		uc := NewTodoUsecase(&repo)
 
-		todo, err := uc.CreateTodo(ctx, "   ", "説明文")
+		todo, err := uc.CreateTodo(ctx, "   ", "説明文", &[]int64{1}[0])
 
 		if err == nil {
 			t.Error("expected error, got nil")
@@ -105,7 +105,7 @@ func TestTodoUsecase_CreateTodo(t *testing.T) {
 			WillReturnError(fmt.Errorf("db connection error"))
 		mock.ExpectRollback()
 
-		todo, err := uc.CreateTodo(ctx, "タイトル", "説明")
+		todo, err := uc.CreateTodo(ctx, "タイトル", "説明", &[]int64{1}[0])
 
 		if err == nil {
 			t.Error("expected error, got nil")

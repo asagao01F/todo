@@ -30,7 +30,7 @@ func (h *TodoHandler) CreateTodo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 【変更】ビジネスロジックとDB保存はUsecaseに丸投げする
-	todo, err := h.todoUsecase.CreateTodo(r.Context(), req.Title, desc)
+	todo, err := h.todoUsecase.CreateTodo(r.Context(), req.Title, desc, req.AccountId)
 	if err != nil {
 		h.respondWithError(w, http.StatusInternalServerError, "データの保存に失敗しました", []string{err.Error()})
 		return

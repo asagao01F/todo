@@ -4,7 +4,7 @@ import "time"
 
 type Todo struct {
     ID          uint       `gorm:"primaryKey"`
-    AccountID   uint       
+    AccountId   *int64     
     Title       string     
     Description string     
     IsCompleted bool       

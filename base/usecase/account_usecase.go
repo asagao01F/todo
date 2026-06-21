@@ -6,32 +6,26 @@ import (
 	"fmt"
 	"strings"
 	"todo/base/model"
+	"todo/base/repository"
 )
 
-// AccountRepository インターフェースの宣言
-type AccountRepository interface {
-	Create(ctx context.Context, account *model.Account) error
-	FindByID(ctx context.Context, id uint) (*model.Account, error)
-	FindByEmail(ctx context.Context, email string) (*model.Account, error)
-}
-
 type AccountUsecase struct {
-	accountRepo AccountRepository
+	accountRepo *repository.PostgresAccountRepository // 以前定義したリポジトリ
 }
 
-func NewAccountUsecase(accountRepo AccountRepository) *AccountUsecase {
-	return &AccountUsecase{accountRepo: accountRepo}
+func NewAccountUsecase(postgresAccountRepo *repository.PostgresAccountRepository) *AccountUsecase {
+	return &AccountUsecase{accountRepo: postgresAccountRepo}
 }
 
 // RegisterAccount: アカウントの新規登録
 func (u *AccountUsecase) RegisterAccount(ctx context.Context, account *model.Account) error {
 	// バリデーション
-	if strings.TrimSpace(account.Email) == "" || strings.TrimSpace(account.Password) == "" {
+	if account.Email == "" || strings.TrimSpace(account.Password) == "" {
 		return errors.New("email and password cannot be empty")
 	}
 
 	// 【ビジネスロジック】Emailの重複チェック
-	existing, err := u.accountRepo.FindByEmail(ctx, account.Email)
+	existing, err := u.accountRepo.FindByEmail(ctx, string(account.Email))
 	if err != nil {
 		return fmt.Errorf("failed to check email duplication: %w", err)
 	}
