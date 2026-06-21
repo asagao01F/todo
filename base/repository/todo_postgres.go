@@ -47,12 +47,15 @@ func (r *PostgresTodoRepository) FindByID(ctx context.Context, id uint) (*model.
 // 3. FindByAccountID: 特定ユーザーのTODO一覧取得
 // .Where で条件を指定し、.Find でスライス（配列）に結果を詰め込みます。
 // 最新のTODOが上にくるように .Order("created_at DESC") を挟んでいます。
-func (r *PostgresTodoRepository) FindByAccountID(ctx context.Context, accountID uint) ([]*model.Todo, error) {
+func (r *PostgresTodoRepository) FindAll(ctx context.Context, accountId *int64) ([]*model.Todo, error) {
     var todos []*model.Todo
-    result := r.db.WithContext(ctx).
-        Where("account_id = ?", accountID).
-        Order("created_at DESC").
-        Find(&todos)
+    query := r.db.WithContext(ctx).Order("created_at DESC")
+    
+    if accountId != nil {
+        query = query.Where("account_id = ?", *accountId)
+    }
+    
+    result := query.Find(&todos)
         
     if result.Error != nil {
         return nil, fmt.Errorf("failed to find todos by account id: %w", result.Error)

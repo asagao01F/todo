@@ -58,6 +58,12 @@ type TodoResponse struct {
 	Title       string    `json:"title"`
 }
 
+// GetTodoListParams defines parameters for GetTodoList.
+type GetTodoListParams struct {
+	// AccountId 絞り込み対象のアカウントID
+	AccountId *int64 `form:"accountId,omitempty" json:"accountId,omitempty"`
+}
+
 // RegisterAccountJSONRequestBody defines body for RegisterAccount for application/json ContentType.
 type RegisterAccountJSONRequestBody = RegisterAccountRequest
 
@@ -75,6 +81,9 @@ type ServerInterface interface {
 	// ヘルスチェック
 	// (GET /health)
 	CheckHealth(w http.ResponseWriter, r *http.Request)
+	// TODO一覧を取得
+	// (GET /todos)
+	GetTodoList(w http.ResponseWriter, r *http.Request, params GetTodoListParams)
 	// TODOを作成
 	// (POST /todos)
 	CreateTodo(w http.ResponseWriter, r *http.Request)
@@ -102,6 +111,12 @@ func (_ Unimplemented) GetAccountById(w http.ResponseWriter, r *http.Request, id
 // ヘルスチェック
 // (GET /health)
 func (_ Unimplemented) CheckHealth(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// TODO一覧を取得
+// (GET /todos)
+func (_ Unimplemented) GetTodoList(w http.ResponseWriter, r *http.Request, params GetTodoListParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -173,6 +188,34 @@ func (siw *ServerInterfaceWrapper) CheckHealth(w http.ResponseWriter, r *http.Re
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CheckHealth(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// GetTodoList operation middleware
+func (siw *ServerInterfaceWrapper) GetTodoList(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetTodoListParams
+
+	// ------------- Optional query parameter "accountId" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "accountId", r.URL.Query(), &params.AccountId)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "accountId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetTodoList(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -344,6 +387,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/health", wrapper.CheckHealth)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/todos", wrapper.GetTodoList)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/todos", wrapper.CreateTodo)

@@ -18,6 +18,7 @@ type mockTodoUsecase struct {
 	// テストケースごとに期待する戻り値を外からコントロールするためのフィールド
 	fakeCreateTodoFn func(ctx context.Context, title string, description string, accountId *int64, dueDate time.Time) (*model.Todo, error)
 	fakeGetTodoByIDFn func(ctx context.Context, id uint) (*model.Todo, error)
+	fakeFetchTodoListFn func(ctx context.Context, accountId *int64) ([]*model.Todo, error)
 }
 
 func (m *mockTodoUsecase) CreateTodo(ctx context.Context, title string, description string, accountId *int64, dueDate time.Time) (*model.Todo, error) {
@@ -26,6 +27,10 @@ func (m *mockTodoUsecase) CreateTodo(ctx context.Context, title string, descript
 
 func (m *mockTodoUsecase) GetTodoByID(ctx context.Context, id uint) (*model.Todo, error) {
 	return m.fakeGetTodoByIDFn(ctx, id)
+}
+
+func (m *mockTodoUsecase) FetchTodoList(ctx context.Context, accountId *int64) ([]*model.Todo, error) {
+	return m.fakeFetchTodoListFn(ctx, accountId)
 }
 
 // -----------------------------------------------------------------------------

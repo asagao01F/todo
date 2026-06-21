@@ -50,6 +50,49 @@ func (h *TodoHandler) CreateTodo(w http.ResponseWriter, r *http.Request) {
 }
 
 // -----------------------------------------------------------------------------
+// 2. Read (List): GET /todos  ★新規追加
+// -----------------------------------------------------------------------------
+// ※ 第3引数の params には oapi-codegen によりクエリパラメータ（GetTodoListParams）が自動パースされて入ります
+func (h *TodoHandler) GetTodoList(w http.ResponseWriter, r *http.Request, params GetTodoListParams) {
+	// クエリパラメータからオプショナルな accountId を安全に抽出
+	var accountId *int64
+	if params.AccountId != nil {
+		accountId = params.AccountId
+	}
+
+	// 【紐付け】Usecase 側に FetchTodoList(ctx, accountId) のような一覧取得メソッドがある想定です
+	todos, err := h.todoUsecase.FetchTodoList(r.Context(), accountId)
+	if err != nil {
+		h.respondWithError(w, http.StatusInternalServerError, "TODO一覧の取得に失敗しました", []string{err.Error()})
+		return
+	}
+
+	// スライスが空だった場合に JSON で null ではなく [] を返却するための初期化
+	res := make([]TodoResponse, 0, len(todos))
+
+	// model.Todo のスライスを OpenAPI のレスポンス配列にマッピング
+	for _, todo := range todos {
+		// ループ内でのアドレス固定化と nil チェック対策
+		todoItem := todo
+		var descPtr *string
+		if todoItem.Description != "" {
+			descPtr = &todoItem.Description
+		}
+
+		res = append(res, TodoResponse{
+			Id:          int64(todoItem.ID),
+			Title:       todoItem.Title,
+			Description: descPtr,
+			Completed:   todoItem.IsCompleted,
+			CreatedAt:   todoItem.CreatedAt,
+			DueDate:     todoItem.DueDate,
+		})
+	}
+
+	h.respondWithJSON(w, http.StatusOK, res)
+}
+
+// -----------------------------------------------------------------------------
 // 2. Read (Single): GET /todos/{id}
 // -----------------------------------------------------------------------------
 func (h *TodoHandler) GetTodoById(w http.ResponseWriter, r *http.Request, id int64) {

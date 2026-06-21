@@ -59,6 +59,33 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+    get:
+      summary: TODO一覧を取得
+      description: 登録されているTODOタスクの一覧を取得します。accountIdが指定された場合は、そのアカウントのタスクのみに絞り込みます。
+      operationId: getTodoList
+      parameters:
+        - name: accountId
+          in: query
+          required: false
+          description: 絞り込み対象のアカウントID
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 取得成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TodoResponse'
+        '500':
+          description: サーバー内部エラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   # ---------------------------------------------------------------------------
   # 3. TODO（取得）

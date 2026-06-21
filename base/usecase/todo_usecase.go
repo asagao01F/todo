@@ -12,6 +12,7 @@ import (
 type TodoUsecaseInterface interface {
 	CreateTodo(ctx context.Context, title string, description string, accountId *int64, dueDate time.Time) (*model.Todo, error)
 	GetTodoByID(ctx context.Context, id uint) (*model.Todo, error)
+	FetchTodoList(ctx context.Context, accountId *int64) ([]*model.Todo, error)
 }
 
 type TodoUsecase struct {
@@ -53,4 +54,9 @@ func (u *TodoUsecase) GetTodoByID(ctx context.Context, id uint) (*model.Todo, er
 		return nil, errors.New("todo not found")
 	}
 	return todo, nil
+}
+
+// 3. FetchTodoList: 一覧取得（新規追加）
+func (u *TodoUsecase) FetchTodoList(ctx context.Context, accountId *int64) ([]*model.Todo, error) {
+	return u.todoRepo.FindAll(ctx, accountId)
 }

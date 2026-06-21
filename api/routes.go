@@ -47,13 +47,18 @@ func (c *CombinedServer) GetTodoById(w http.ResponseWriter, r *http.Request, id 
     c.TodoHandler.GetTodoById(w, r, id)
 }
 
+// 4. TODO一覧取得の委譲
+func (c *CombinedServer) GetTodoList(w http.ResponseWriter, r *http.Request, params handler.GetTodoListParams) {
+    c.TodoHandler.GetTodoList(w, r, params)
+}
+
 // -----------------------------------------------------------------------------
-// 4. アカウント登録の委譲
+// 5. アカウント登録の委譲
 func (c *CombinedServer) RegisterAccount(w http.ResponseWriter, r *http.Request) {
     c.AccountHandler.RegisterAccount(w, r)
 }
 
-// 5. アカウント取得の委譲
+// 6. アカウント取得の委譲
 func (c *CombinedServer) GetAccountById(w http.ResponseWriter, r *http.Request, id int64) {
     c.AccountHandler.GetAccountById(w, r, id)
 }
