@@ -1,6 +1,3 @@
-# This workflow will build a golang project
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
-
 name: Go
 
 on:
@@ -10,19 +7,44 @@ on:
     branches: [ "main" ]
 
 jobs:
-
   build:
     runs-on: ubuntu-latest
+
+    # ジョブに必要な外部サービス（Dockerコンテナ）を定義します
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: test_db
+        # コンテナの5432ポートを、ホスト（Runner）の5432ポートにマッピングします
+        ports:
+          - 5432:5432
+        # データベースが完全に起動するまで待つためのヘルスチェック
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
     - uses: actions/checkout@v4
 
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
-        go-version: '1.20'
+        go-version: '1.25'
 
     - name: Build
       run: go build -v ./...
 
     - name: Test
+      # 環境変数を通じて、GoのテストコードにDB接続情報を渡します
+      env:
+        DB_HOST: localhost
+        DB_PORT: 5432
+        DB_USER: user
+        DB_PASSWORD: password
+        DB_NAME: test_db
       run: go test -v ./...
