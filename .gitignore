@@ -45,3 +45,5 @@ config/config.local.yaml
 # OS共通の不要ファイル
 .DS_Store
 Thumbs.db
+
+actions-runner
