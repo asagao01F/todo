@@ -7,7 +7,7 @@ on:
 jobs:
   deploy:
     # 💡 ここがポイント！GitHubのサーバーではなく、先ほど登録した「あなたのPC」で実行させます
-    runs-on: [self-hosted, deploy]
+    runs-on: [self-hosted, linux, x64]
 
     steps:
     # 1. あなたのPC上のワークスペースに最新のコードをチェックアウト（Pull）
