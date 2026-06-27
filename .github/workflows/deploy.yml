@@ -1,0 +1,44 @@
+name: Local Build and Deploy
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  deploy:
+    # 💡 ここがポイント！GitHubのサーバーではなく、先ほど登録した「あなたのPC」で実行させます
+    runs-on: [self-hosted, deploy]
+
+    steps:
+    # 1. あなたのPC上のワークスペースに最新のコードをチェックアウト（Pull）
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # 2. タイムスタンプを取得して変数にする
+    - name: Get current timestamp
+      id: timestamp
+      run: echo "time=$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
+
+    # 3. あなたのPCの中で、直接Dockerイメージをビルドする
+    - name: Build Docker Image
+      run: |
+        docker build -t my-go-app:${{ steps.timestamp.outputs.time }} .
+        # 常に最新を指す「latest」タグも同時につけておく
+        docker tag my-go-app:${{ steps.timestamp.outputs.time }} my-go-app:latest
+
+    # 4. 古いコンテナを停止・削除し、新しいイメージで起動する
+    - name: Deploy Container
+      run: |
+        # すでに同じ名前のコンテナが動いていたら停止して削除（初回などはエラーになるので || true で無視）
+        docker stop my-go-app-container || true
+        docker rm my-go-app-container || true
+        
+        # 新しいイメージでコンテナを起動
+        docker run -d \
+          --name my-go-app-container \
+          -p 8080:8080 \
+          my-go-app:latest
+
+    # 5. 【おまけ】古い不要になったイメージを削除してディスクを節約
+    - name: Clean up old images
+      run: docker image prune -f
