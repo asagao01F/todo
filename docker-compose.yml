@@ -1,0 +1,48 @@
+services:
+  # ① Goアプリコンテナ
+  go-app:
+    build: .
+    # ポートを直接外（ホスト）に公開せず、Dockerの内部だけに閉じる
+    expose:
+      - "8080"
+    volumes:
+      - ./config:/root/config # ローカルの ./config フォルダをコンテナの /root/config に同期
+      # もしファイル単体の場合は以下のようにします
+      # - ./config.yaml:/root/config/config.yaml
+    environment:
+      - DB_HOST=postgres-db     # 将来k8sのSecret等に置き換わる部分
+      - DB_USER=test
+      - DB_PASSWORD=password
+      - DB_NAME=todo
+    depends_on:
+      - postgres-db  # PostgreSQLが起動してからGoアプリを起動する
+    restart: always
+
+  # ② Nginxコンテナ（API Gatewayの役割）
+  nginx-gateway:
+    image: nginx:latest
+    ports:
+      - "80:80"  # ホストの80番ポートをNginxの80番に繋ぐ
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - go-app  # Goアプリが起動してからNginxを起動する
+    restart: always
+
+# ③ PostgreSQLコンテナ（新しく追加）
+  postgres-db:
+    image: postgres:16-alpine # 軽量なalpine版がおすすめ
+    environment:
+      - POSTGRES_USER=test
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=todo
+    ports:
+      - "5432:5432" # 必要ならローカルのGUIツール（DBeaverなど）から覗けるように公開
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # データを永続化（コンテナを消してもデータが残るようにする）
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: always
+
+# データの保存場所を定義
+volumes:
+  postgres_data:
