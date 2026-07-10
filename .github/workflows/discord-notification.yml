@@ -1,0 +1,28 @@
+name: PR Notification to Discord
+
+on:
+  pull_request:
+    types: [opened]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Discord notification
+        uses: Ilshidur/action-discord@master
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        with:
+          args: |
+            🚀 **PR OPENED** | `#${{ github.event.pull_request.number }}`
+            ## 📝 ${{ github.event.pull_request.title }}
+            
+            - **Author** : `${{ github.actor }}`
+            - **Branch** : `${{ github.event.pull_request.base.ref }}` 🎯 `${{ github.event.pull_request.head.ref }}`
+            
+            ### 💬 Description
+            >>> ${{ github.event.pull_request.body }}
+            
+            ---
+            👀 **Review Link:** ${{ github.event.pull_request.html_url }}
+            @hujii レビューをお願いします！ ✨
