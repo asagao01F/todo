@@ -25,4 +25,4 @@ jobs:
             
             ---
             👀 **Review Link:** ${{ github.event.pull_request.html_url }}
-            @hujii レビューをお願いします！ ✨
+            @hujii_daiki レビューをお願いします！ ✨
